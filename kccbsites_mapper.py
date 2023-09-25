@@ -44,7 +44,7 @@ df = pd.read_excel(data_source)
 #sidebar
 with st.sidebar:
     st.markdown(''' ### KCCB-ACTS Supported Facility Mapper''')
-    st.caption("all sites supported by KCCB-ACTS under CDC's agency")
+    st.caption("A mapping of all sites supported by KCCB-ACTS, ")
     st.markdown(''' ---''')
     st.write(f'As at August 2023, KCCB-ACTS supports {df.shape[0]} sites in {df.county.nunique()} counties')
     st.markdown('''---
@@ -68,16 +68,14 @@ with Map_tab:
 
 #our visualization and metrics dashboard
 with Viz_tab:
-   st.caption("metrics as at 2023Q4 end of August 2023")
-   
-   show_data_toggle = st.toggle('show data')
+   show_data_toggle = st.toggle(label='toggle data')
    if show_data_toggle:
       st.dataframe(df[['mfl_code', 'facility_name', 'region',
        'county', 'sub_county', 'owner', 'txnew2023Q1', 'txnew2023Q2',
        'txnew2023Q3', 'txnew2023Q4', '2023Q1', '2023Q2', '2023Q3', '2023Q4']],
                    hide_index=True, use_container_width=True, height=125
                   )    
-      
+   st.caption("metrics as at **2023Q4 end of August 2023**")
    metric1, metric2, metric3, metric4 = st.columns(4)
    with metric1:
       st.metric(label="Current on Treatment",
@@ -87,9 +85,10 @@ with Viz_tab:
                 value=(np.sum(df[['txnew2023Q1', 'txnew2023Q2','txnew2023Q3', 'txnew2023Q4']], axis=1).sum().astype(str)), 
                 delta=(np.sum(df[['txnew2023Q1', 'txnew2023Q2','txnew2023Q3', 'txnew2023Q4']], axis=1).sum().astype(str)))   
    with metric3:
-      st.metric(label="Net New",
-                value=(np.sum(df[['txnew2023Q1', 'txnew2023Q2','txnew2023Q3', 'txnew2023Q4']], axis=1).sum().astype(str)), 
-                delta=(np.sum(df[['txnew2023Q1', 'txnew2023Q2','txnew2023Q3', 'txnew2023Q4']], axis=1).sum().astype(str)))   
+      st.metric(label="Treatment Net New",
+                value=(df['2023Q4'] - df['2023Q3']).sum().astype(str),
+                delta=(df['2023Q3'] - df['2023Q2']).sum().astype(str),
+                )
    with metric4:
       st.metric(label="TX New Total",
                 value=(np.sum(df[['txnew2023Q1', 'txnew2023Q2','txnew2023Q3', 'txnew2023Q4']], axis=1).sum().astype(str)), 
@@ -99,9 +98,10 @@ with Viz_tab:
    
    st.caption("ART clients on care as of August 2023")
    bar = alt.Chart(regionaltx).mark_bar().encode(
-      y="region:N",
+      y=alt.Y("region:N").title("Region"),
       x=alt.X("2023Q4:Q").title("Current on Care"),
-      color="region")
+      color=alt.Color("region").scale(scheme="tableau20").legend(None)
+      )
 
    text = bar.mark_text(
       align="left",
