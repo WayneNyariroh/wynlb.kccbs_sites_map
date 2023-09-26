@@ -1,6 +1,7 @@
 altair==5.1.1
 folium==0.14.0
 numpy==1.25.2
+openpyxl==3.1.2
 pandas==2.0.3
 Plost==0.2.5
 seaborn==0.12.2
