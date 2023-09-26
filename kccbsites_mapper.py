@@ -9,6 +9,7 @@ the map and dashboard features
 import streamlit as st
 import pandas as pd
 import numpy as np
+import openpyxl
 
 import folium
 from streamlit_folium import st_folium
