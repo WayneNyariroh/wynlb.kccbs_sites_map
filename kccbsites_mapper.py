@@ -1,9 +1,17 @@
+'''
+making a streamlit app that loads in a dataset from an excel file, and uses that to display a map of the passed coordinates
+coordinates will have popups when clicked. app will include a dashboard with some metric cards
+app should also show present date and time; a sidebar with basic information on the app; 2 tabs to act as containers for
+the map and dashboard features 
+'''
+#to do that we need to import a few libraries
 #importing the libraaries needed for data manipulation and plots/visualizations
 import streamlit as st
 import pandas as pd
 import numpy as np
 
 import folium
+from streamlit_folium import st_folium
 import altair as alt
 import seaborn as sns
 import plost
@@ -12,11 +20,12 @@ import plost
 import datetime
 import time
 
+
 #app settings
 st.set_page_config(
-    page_title="ccc site mapper",
+    page_title="KCCB-ACTS CCC sites mapper",
     layout="wide",
-    page_icon="icons/sitemarker.png")
+    page_icon="icons/txregime.png")
 
 #hide the menu feature
 hide_menu_style = """
@@ -36,23 +45,28 @@ st.markdown("""
         </style>
         """, unsafe_allow_html=True)
 
+#load css for extra styling we cant do here
+with open("extra_styling/style.css") as f:
+   st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
 
 #our data source
 data_source = 'processed_data/cleaned_data.xlsx'
 df = pd.read_excel(data_source)
 
+tested_data = 'raw_data/tested_totals.xlsx'
+tested_df = pd.read_excel(tested_data)
+
 #sidebar
 with st.sidebar:
-    st.markdown(''' ### KCCB-ACTS Supported Facility Mapper''')
+    st.header('KCCB-ACTS Supported Sites Mapper `version 1.0` ')
     st.caption("a mapping of all sites supported by KCCB-ACTS with additional visualizations on key indicator elements. "
-              "the first tab - Site Locations - maps all the facility, grouping them into clusters based on promixity and zoom level. "
-              "it also shows popup information for each facility on click. "
-              "the second tab - Data Visualization - shows various data elements and metrics with various aggregations and pivotting used.  "
-              "data used extracted from 3pm reporting platform. cleaning, feature engineering and aggregations done afterwards")
-    st.markdown(''' ''')
-    st.markdown(''' ---''')
-    st.markdown('''---
-                created by [Wayne Omondi](https://www.linkedin.com/in/waynewillislink/)
+              "The first tab - Site Locations - maps all the facility, grouping them into clusters based on promixity and zoom level. "
+              "It also shows popup information for each facility on click. "
+              "The second tab - Data Visualization - shows various data elements and metrics with various aggregations and pivotting used.  ")
+    st.caption("Data used was extracted from 3pm reporting platform: then cleaned and prepared with feature engineering and aggregations to get the desired datasets")
+    st.divider()
+    st.markdown('''Made by [Wayne Omondi](https://www.linkedin.com/in/waynewillislink/)
                 ''')
     
 #tabs for the main view    
@@ -61,53 +75,65 @@ Map_tab, Viz_tab  = st.tabs(["Site Locations","Data Visualizations"])
 #our map
 with Map_tab:
    st.write(f'As at August 2023, KCCB-ACTS supports the following {df.shape[0]} sites in {df.county.nunique()} different counties across Kenya')
-   map = folium.Map(location=[ -1.286389, 36.817223], 
+   sites_map = folium.Map(location=[ -1.286389, 36.817223], 
                     zoom_start=7, 
                     min_zoom=3, 
                     max_zoom=11)
-   folium.TileLayer('cartodbpositron').add_to(map)
-   #folium.Marker(location=[ -1.286389, 36.817223], icon="icons/sitemarker.png").add_to(map)
-   st.write(map)
+   folium.TileLayer('cartodbpositron').add_to(sites_map)
+   #folium.Marker(location=[ -1.286389, 36.817223], icon="icons/sitemarker.png").add_to(sites_map)
+   st_folium(sites_map, use_container_width=True)
 
 
 #our visualization and metrics dashboard
 with Viz_tab:
    show_data_toggle = st.toggle(label='toggle data')
    if show_data_toggle:
+      st.caption("**tip**: _once 'on' you can expand dataframe on your right and interact with the columns by sorting in ascending or descending order_")
       st.dataframe(df[['mfl_code', 'facility_name', 'region',
        'county', 'sub_county', 'owner', 'txnew2023Q1', 'txnew2023Q2',
        'txnew2023Q3', 'txnew2023Q4', '2023Q1', '2023Q2', '2023Q3', '2023Q4']],
                    hide_index=True, use_container_width=True, height=125
                   )    
-   st.caption("metrics as at 2023 Quarter 4 **(end of August 2023)**")
+   st.caption("metrics **(August 2023)**")
    metric1, metric2, metric3, metric4 = st.columns(4)
+   
+   #streanlit extras to style our metric cards
+   from streamlit_extras.metric_cards import style_metric_cards
+   
    with metric1:
       st.metric(label="Current on Treatment",
-                value=(df['2023Q4'].sum().astype(str)), delta=(df['2023Q3'].sum().astype(str)), delta_color="inverse"
+                value=(df['2023Q4'].sum().astype(str)),
+                delta=(f"- {(df['2023Q3'].sum().astype(str))}")
                 )
    with metric2:
-      st.metric(label="New on Treatment",
-                value=(np.sum(df[['txnew2023Q1', 'txnew2023Q2','txnew2023Q3', 'txnew2023Q4']], axis=1).sum().astype(str)), 
+      st.metric(label="Total Tested",
+                value=(np.sum(tested_df[['number_tested']], axis=1).sum().astype(str)), 
                 delta=("2022Q4"),delta_color="off"
                 )
    with metric3:
-      st.metric(label="Treatment Net New",
-                value=(df['2023Q4'] - df['2023Q3']).sum().astype(str),
-                delta=(df['2023Q3'] - df['2023Q2']).sum().astype(str),
+      st.metric(label="New on Treatment",
+                value=(df[['txnew2023Q4']]).sum().sum().astype(str),
+                delta=(f"-{(df['txnew2023Q3']).sum().astype(str)}"),
                 )
    with metric4:
-      st.metric(label="""Tx Current Growth""",
-                value=((f"{(df['txnew2023Q4']).sum() - (df['txnew2023Q3']).sum()}")), 
-                delta=((f"- previous: {(df['txnew2023Q3']).sum() - (df['txnew2023Q2']).sum()}")), delta_color="normal"
+      st.metric(label="""Tx Current Growth Q4""",
+                value=((f"{(df['2023Q4']).sum() - (df['2023Q3']).sum()}")), 
+                delta=((f"{(df['2023Q3']).sum() - (df['2023Q2']).sum()}")), delta_color="inverse"
       )
+   
+   #styling our metric cards
+   style_metric_cards(background_color="#e4e4e4", 
+                      border_left_color="fca311", 
+                      border_color='#e4e4e4', box_shadow=True)
+   
    #data source for regional art bar chart
    
    viz1, viz2, viz3 = st.columns([2,3,2])
    
    #table showing tx new per quarter per region
    with viz1:
-      st.write("New on Treatment")
-      st.caption("number of adults and children newly enrolled on antiretroviral therapy in each quarter of operation. this measures the ongoing scale up and uptake of art program. ")
+      st.subheader("New on Treatment", divider="grey")
+      st.caption("number of adults and children newly enrolled on antiretroviral therapy in each quarter of operation. all individuals initiating ART during the period. ")
       viz1.dataframe((df.groupby(
          by=['region'])[['txnew2023Q1','txnew2023Q2','txnew2023Q3','txnew2023Q4']]
                   .sum()
@@ -122,41 +148,83 @@ with Viz_tab:
    
    regionaltx = df.groupby(by=['region'])['2023Q4'].sum().reset_index()
    with viz2:
-      st.write("ART clients on Treatment")
+      st.subheader("ART clients on Treatment", divider="grey")
       st.caption("number of adults and children currently receiving antiretroviral theraphy end of the period. 'current' is a state defined by treatment status when last seen i.e., end of the reporting period.")
-      bar = alt.Chart(regionaltx).mark_bar().encode(
-         y=alt.Y("region:N").title("").axis(labels=False),
+      txcurrbar = alt.Chart(regionaltx).mark_bar().encode(
+         y=alt.Y("region:N").title(""),
          x=alt.X("2023Q4:Q").title("Current on Care"),
-         color=alt.Color("region").scale(scheme="purplered")
+         color=alt.Color("region",legend=None).scale(scheme="tableau10")
          ).properties(width=500, height=260)
+      
 
-      text = bar.mark_text(
+      text = txcurrbar.mark_text(
          align="left",
          baseline="middle",
          dx=3
       ).encode(text="2023Q4")
 
-      bar + text
+      txcurrbar + text
       
    with viz3:
-      st.write("KCCB-ACTS sites per county")
+      st.subheader("KCCB-ACTS sites per county", divider="grey")
       st.caption("a tally of health facilities grouped by county with KCCB-ACTS as the implementing partner")
       sitescount = df.county.value_counts().reset_index()
 
-      bar = alt.Chart(sitescount).mark_bar().encode(
-         y=alt.Y("county:N").title("").axis(labels=False),
+      site_count_bar = alt.Chart(sitescount).mark_bar().encode(
+         y=alt.Y("county:N").title(""),
          x=alt.X("count:Q").title("Number of Sites").axis(labels=False),
-         color=alt.Color("county").scale(scheme="purplered")
+         order=alt.Order("count:Q").sort('descending'),
+         color=alt.Color("county",legend=None).scale(scheme="tableau10")
          ).properties(width=400, height=260)
+      
+      site_count_bar.configure_legend(
+         clipHeight=50,
+         gradientLength=150,
+         padding=6,
+         orient='bottom')
 
-      text = bar.mark_text(
+      text = site_count_bar.mark_text(
          align="left",
          baseline="middle",
          dx=3
       ).encode(text="count")
 
-      bar + text
+      site_count_bar + text
+      
    
+   viznext1, viznext2 = st.columns(2)
+   with viznext1:
+      st.subheader("Testing service delivery", divider="grey")
+      st.caption("all clients from various testing service points who were elligible for HIV testing services, were tested and have known HIV results. ")
+      
+      entry_point_data = "raw_data/entry_point_tests.xlsx"
+      entrypoint_tests = pd.read_excel(entry_point_data)
+      
+      entry_point_tests = alt.Chart(entrypoint_tests).mark_bar().encode(
+         x=alt.X("entry_point").title(""), 
+         y=alt.Y("sum(number_tested)").title(""), 
+         color=alt.Color("entry_point").scale(scheme="tableau10").legend(None)
+      )
+      
+      entry_point_tests
+      
+   #create a new dataset merge tx new per county with tested per county    
+   txnew_yield = (df.groupby(by=['county'])[['txnew2023Q4']].sum()).merge(tested_df,
+                                                                 on=['county'],
+                                                                 how='outer')
+      
+   #stacked area plot
+   with viznext2:
+      st.subheader("New on ART", divider="grey")
+      st.caption("visualization of how tests done resulted in new on ART clients for the month August 2023")
+      
+      test_yield = alt.Chart(txnew_yield).mark_area().encode(
+        y= alt.Y("sum(txnew2023Q4):Q, sum(tested_totals):Q"),
+        x= alt.X("county:N"),
+        color= alt.Color("county:N").scale(scheme="category20b")
+       )
+
+      test_yield
    
     
     
