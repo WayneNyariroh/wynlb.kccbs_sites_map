@@ -57,13 +57,15 @@ st.markdown("""
 with open("extra_styling/style.css") as f:
    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-
-#our data source
+#loading our data sources
 data_source = 'processed_data/cleaned_data.xlsx'
 df = pd.read_excel(data_source)
 
 tested_data = 'raw_data/tested_totals.xlsx'
 tested_df = pd.read_excel(tested_data)
+
+entry_point_data = "raw_data/entry_point_tests.xlsx"
+entrypoint_tests = pd.read_excel(entry_point_data)
 
 #sidebar
 with st.sidebar:
@@ -87,7 +89,13 @@ with Map_tab:
                     zoom_start=7, 
                     min_zoom=3, 
                     max_zoom=11)
+   
    folium.TileLayer('cartodbpositron').add_to(sites_map)
+   
+   '''
+   for site in sites_map.iterrows():  
+    folium.Marker(list([site['lat'],site['lon']]),popup=site['facility_name']).add_to(sites_map)
+   ''' 
    #folium.Marker(location=[ -1.286389, 36.817223], icon="icons/sitemarker.png").add_to(sites_map)
    st_folium(sites_map, use_container_width=True)
 
@@ -192,7 +200,7 @@ with Viz_tab:
                   axis=alt.Axis(labelFontSize=10)).title(""),
             x=alt.X("count:Q").title("Number of Sites").axis(labels=False),
             color=alt.Color("county",legend=None).scale(scheme="category20c")
-            ).properties(width=500, height=260)
+            ).properties(height=270)
 
          text = site_count_bar.mark_text(
             align="left",
@@ -208,10 +216,7 @@ with Viz_tab:
       with st.container():
          st.subheader("Testing service delivery", divider="grey")
          st.caption("all clients from various testing service points who were elligible for HIV testing services, were tested and have known HIV results. ")
-         
-         entry_point_data = "raw_data/entry_point_tests.xlsx"
-         entrypoint_tests = pd.read_excel(entry_point_data)
-         
+                 
          entry_point_tests = alt.Chart(entrypoint_tests).mark_bar().encode(
             x=alt.X("entry_point").title(""), 
             y=alt.Y("sum(number_tested)").title(""), 
