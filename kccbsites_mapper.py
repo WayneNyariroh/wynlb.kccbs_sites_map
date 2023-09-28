@@ -22,7 +22,6 @@ from streamlit_folium import st_folium
 
 #import libraries for visualizations
 import altair as alt
-import seaborn as sns
 import plost
 
 #to allow making of a date and time dispaly feature
@@ -69,35 +68,41 @@ entrypoint_tests = pd.read_excel(entry_point_data)
 
 #sidebar
 with st.sidebar:
-    st.header('KCCB-ACTS Supported Sites Mapper `version 1.0` ')
-    st.caption("a mapping of all sites supported by KCCB-ACTS with additional visualizations on key indicator elements. "
-              "The first tab - Site Locations - maps all the facility, grouping them into clusters based on promixity and zoom level. "
+   cal_watch = datetime.datetime.now()
+   st.button(f':clock1: {cal_watch.strftime("%d/%m/%Y  %H:%M")}', 
+             disabled=True)
+   st.header('KCCB-ACTS Supported Sites Mapper `version 1.0` ')
+   st.caption("a mapping of all sites supported by KCCB-ACTS with additional visualizations on key indicator elements. "
+              "The first tab - :orange[Site Locations] - maps all the facility, grouping them into clusters based on promixity and zoom level. "
               "It also shows popup information for each facility on click. "
-              "The second tab - Data Visualization - shows various data elements and metrics with various aggregations and pivotting used.  ")
-    st.caption("Data used was extracted from 3pm reporting platform: then cleaned and prepared with feature engineering and aggregations to get the desired datasets")
-    st.divider()
-    st.markdown('''Made by [Wayne Omondi](https://www.linkedin.com/in/waynewillislink/)
+              "The second tab - :orange[Data Visualization] - shows various data elements and metrics with various aggregations and pivotting used.  ")
+   st.caption("Data used was extracted from 3pm reporting platform: then cleaned and prepared with feature engineering and aggregations to get the desired datasets")
+   st.divider()
+   st.markdown('''Made by [Wayne Omondi](https://www.linkedin.com/in/waynewillislink/)
                 ''')
     
 #tabs for the main view    
-Map_tab, Viz_tab  = st.tabs(["Site Locations","Data Visualizations"])
+Map_tab, Viz_tab  = st.tabs(["Site Locations :earth_africa:",
+                             "Data Visualizations :bar_chart:"])
 
 #our map
 with Map_tab:
-   st.write(f'As at August 2023, KCCB-ACTS supports the following {df.shape[0]} sites in {df.county.nunique()} different counties across Kenya')
-   sites_map = folium.Map(location=[ -1.286389, 36.817223], 
-                    zoom_start=7, 
-                    min_zoom=3, 
-                    max_zoom=11)
-   
-   folium.TileLayer('cartodbpositron').add_to(sites_map)
-   
-   '''
-   for site in sites_map.iterrows():  
-    folium.Marker(list([site['lat'],site['lon']]),popup=site['facility_name']).add_to(sites_map)
-   ''' 
-   #folium.Marker(location=[ -1.286389, 36.817223], icon="icons/sitemarker.png").add_to(sites_map)
-   st_folium(sites_map, use_container_width=True)
+   with st.container():
+      st.write(f'As at August 2023, KCCB-ACTS supports the following {df.shape[0]} sites in {df.county.nunique()} different counties across Kenya')
+      sites_map = folium.Map(location=[ -1.286389, 36.817223], 
+                     zoom_start=7, 
+                     min_zoom=3, 
+                     max_zoom=8)
+      
+      
+      for site in df.iterrows():
+         sites_coordinates = ([site[1]['lat'],site[1]['lon']])
+         folium.Marker(sites_coordinates,popup=site[1]['facility_name']).add_to(sites_map) 
+         
+      folium.TileLayer('cartodbpositron').add_to(sites_map)
+      
+      #folium.Marker(location=[ -1.286389, 36.817223],icon="icons/sitemarker.png",popup="Place",tooltip="Click me").add_to(sites_map)
+      st_folium(sites_map, use_container_width=True)
 
 
 #our visualization and metrics dashboard
@@ -139,9 +144,11 @@ with Viz_tab:
          )
       
       #styling our metric cards
-      style_metric_cards(background_color="#e4e4e4", 
-                        border_left_color="fca311", 
-                        border_color='#e4e4e4', box_shadow=True)
+      style_metric_cards(background_color="#EFF2F5", 
+                        border_size_px=0.05,
+                        border_radius_px=8,
+                        border_left_color="#ED795F", 
+                        border_color="#A7ADB2", box_shadow=True)
       
    #data source for regional art bar chart
    
@@ -154,14 +161,14 @@ with Viz_tab:
          st.caption("number of adults and children newly enrolled on antiretroviral therapy in each quarter of operation. all individuals initiating ART during the period. ")
          viz1.dataframe((df.groupby(
             by=['region'])[['txnew2023Q1','txnew2023Q2','txnew2023Q3','txnew2023Q4']]
-                     .sum()
-                     .reset_index()), 
+                     .sum().reset_index()), 
                   column_config={"region":"Region",
                                  "txnew2023Q1":"Q1",
                                  "txnew2023Q2":"Q2",
                                  "txnew2023Q3":"Q3",
                                  "txnew2023Q4":"Q4"}, 
                   hide_index=True, height=220, use_container_width=True)
+      #st.caption("**tip:** click on columns to sort")
 
    #new df from use
    regionaltx = df.groupby(by=['region'])['2023Q4'].sum().reset_index()
@@ -174,11 +181,11 @@ with Viz_tab:
             y=alt.Y("region:N", 
                   sort=alt.EncodingSortField(field="2023Q4", 
                                              order='descending'),
-                  axis=alt.Axis(labelFontSize=10)).title(""),
-            x=alt.X("2023Q4:Q").title("Current on Care"),
+                  axis=alt.Axis(labelFontSize=11)).title(""),
+            x=alt.X("2023Q4:Q").axis(tickCount=4).title(""),
             color=alt.Color("region",legend=None).scale(scheme="category20c")
-            ).properties(width=500, height=260)
-         
+            ).properties(height=270)
+      
 
          text = txcurrbar.mark_text(
             align="left",
@@ -197,8 +204,9 @@ with Viz_tab:
          site_count_bar = alt.Chart(sitescount).mark_bar().encode(
             y=alt.Y("county:N",sort=alt.EncodingSortField(field='count',
                                                          order='ascending'),
-                  axis=alt.Axis(labelFontSize=10)).title(""),
-            x=alt.X("count:Q").title("Number of Sites").axis(labels=False),
+                  axis=alt.Axis(labelOverlap=False,
+                                labelFontSize=11)).title(""),
+            x=alt.X("count:Q").title("").axis(labels=False, tickCount=4),
             color=alt.Color("county",legend=None).scale(scheme="category20c")
             ).properties(height=270)
 
@@ -219,11 +227,17 @@ with Viz_tab:
                  
          entry_point_tests = alt.Chart(entrypoint_tests).mark_bar().encode(
             x=alt.X("entry_point").title(""), 
-            y=alt.Y("sum(number_tested)").title(""), 
+            y=alt.Y("sum(number_tested)").title("").axis(tickCount=4), 
             color=alt.Color("entry_point").scale(scheme="category20c").legend(None)
          )
          
-         st.altair_chart(entry_point_tests, use_container_width=True)
+         text_tested = entry_point_tests.mark_text(
+            align="center",
+            baseline="middle",
+            dx=5, dy=-6
+         ).encode(text="sum(number_tested)")
+         
+         st.altair_chart(entry_point_tests + text_tested, use_container_width=True)
       
    #create a new dataset merge tx new per county with tested per county    
    txnew_yield = (df.groupby(by=['county'])[['txnew2023Q4']].sum()).merge(tested_df,
