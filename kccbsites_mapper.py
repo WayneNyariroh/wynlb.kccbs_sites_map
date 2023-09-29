@@ -36,7 +36,8 @@ pageicon = "icons/txregime.png"
 st.set_page_config(
     page_title="KCCB-ACTS: Facility Mapper FY2023",
     layout="wide",
-    page_icon=pageicon)
+    page_icon=pageicon,
+    initial_sidebar_state="expanded")
 
 #hide the menu feature
 hide_menu_style = """
