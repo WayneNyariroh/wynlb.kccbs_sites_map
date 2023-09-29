@@ -19,6 +19,9 @@ import openpyxl
 #import libraries for the mapping
 import folium
 from streamlit_folium import st_folium
+from folium.plugins import MarkerCluster
+from folium.plugins import Search
+
 
 #import libraries for visualizations
 import altair as alt
@@ -30,7 +33,7 @@ import time
 
 #app settings
 st.set_page_config(
-    page_title="facility mapper",
+    page_title="KCCB-ACTS Facility Mapper",
     layout="wide",
     page_icon="icons/txregime.png")
 
@@ -88,20 +91,33 @@ Map_tab, Viz_tab  = st.tabs(["Site Locations :earth_africa:",
 #our map
 with Map_tab:
    with st.container():
-      st.write(f'As at August 2023, KCCB-ACTS supports the following {df.shape[0]} sites in {df.county.nunique()} different counties across Kenya')
+      #st.write(f'As at August 2023, KCCB-ACTS supports the following {df.shape[0]} sites in {df.county.nunique()} different counties across Kenya')
+      st.caption("**click on the clusters to access the sites**")
       sites_map = folium.Map(location=[ -1.286389, 36.817223], 
-                     zoom_start=7, 
-                     min_zoom=3, 
-                     max_zoom=8)
+                             zoom_start=7, 
+                             min_zoom=6, 
+                             max_zoom=9)
       
-      
+      folium.TileLayer('cartodbpositron').add_to(sites_map)
+      sites_cluster = MarkerCluster().add_to(sites_map)   
+            
       for site in df.iterrows():
          sites_coordinates = ([site[1]['lat'],site[1]['lon']])
-         folium.Marker(sites_coordinates,popup=site[1]['facility_name']).add_to(sites_map) 
-         
-      folium.TileLayer('cartodbpositron').add_to(sites_map)
+         folium.Marker(sites_coordinates,
+                       icon=folium.Icon(color='orange'),
+                       popup=(site[1]['facility_name']+","+" located in"+" "+site[1]['sub_county']+" "+"sub county"+" "+"in"+" "+site[1]['county']+"."+" Serves "+str(site[1]['2023Q4'])+" clients on ART (close of aug 2023)"),
+                             min_width=2500, 
+                       tooltip="Click for Facility Information :wave:").add_to(sites_cluster) 
       
-      #folium.Marker(location=[ -1.286389, 36.817223],icon="icons/sitemarker.png",popup="Place",tooltip="Click me").add_to(sites_map)
+      #implement a search feature on to the map with the SearchPlugin
+      site_search = Search(
+         layer=sites_cluster,
+         geom_type="Point",
+         search_label="facility_name",
+         placeholder="Search for a Facility",
+         position="topright",
+         collapsed=False).add_to(sites_map)
+         
       st_folium(sites_map, use_container_width=True)
 
 
@@ -111,8 +127,7 @@ with Viz_tab:
    if show_data_toggle:
       st.caption("**tip**: _once 'on' you can expand dataframe on your right and interact with the columns by sorting in ascending or descending order_")
       st.dataframe(df[['mfl_code', 'facility_name', 'region',
-       'county', 'sub_county', 'owner', 'txnew2023Q1', 'txnew2023Q2',
-       'txnew2023Q3', 'txnew2023Q4', '2023Q1', '2023Q2', '2023Q3', '2023Q4']],
+       'txnew2023Q1', 'txnew2023Q2','txnew2023Q3', 'txnew2023Q4', '2023Q1', '2023Q2', '2023Q3', '2023Q4']],
                    hide_index=True, use_container_width=True, height=125
                   )    
    with st.container():   
@@ -247,12 +262,17 @@ with Viz_tab:
    #stacked area plot
    with viznext2:
       with st.container():
-         st.subheader("New on ART", divider="grey")
+         st.subheader("Tested Positive New on ART", divider="grey")
          st.caption("visualization of how tests done resulted in new on ART clients for the month August 2023")
+         
          
          #test_yield = alt.Chart(txnew_yield).mark_area().encode(y= alt.Y("sum(txnew2023Q4):Q, sum(tested_totals):Q"),x= alt.X("county:N"),color= alt.Color("county:N").scale(scheme="category20b"))
 
          #test_yield
-   
+   st.dataframe(((df[['county','txnew2023Q1','txnew2023Q2',
+             'txnew2023Q3','txnew2023Q4']].groupby(
+                 by=['county'])[['txnew2023Q1',
+                                 'txnew2023Q2','txnew2023Q3','txnew2023Q4']].sum()).transpose().reset_index().rename(columns={"index":"FY23 Quarter"}).set_index('FY23 Quarter')),
+                use_container_width=True)
     
     
