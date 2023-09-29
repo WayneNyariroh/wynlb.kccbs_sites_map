@@ -114,11 +114,7 @@ with Map_tab:
                        tooltip="Click for Facility Information", name="nameascii").add_to(sites_cluster) 
          
        #implement a search feature on to the map with the SearchPlugin
-      for grp_name, df_grp in df.groupby('region'):
-         feature_group = folium.FeatureGroup(grp_name)
-      feature_group.add_to(sites_cluster)
 
-      folium.LayerControl().add_to(sites_map)
       folium.TileLayer('cartodbpositron').add_to(sites_cluster)
          
       st_folium(sites_map, use_container_width=True)
@@ -287,8 +283,7 @@ with Viz_tab:
          st.caption("Positivity yield for the month **August 2023** from the total tests done in each region")
          st.dataframe(pos_yield, column_config={"region":"Region",
                                                 "number_tested":"Tests Done",
-                                                "number_positive":"Postivive Results"}, 
-                      use_container_width=True)
+                                                "number_positive":"Postivive Results"}, width=350)
          
          #test_yield = alt.Chart(pos_yield).mark_area().encode(y= alt.Y("sum(number_tested):Q, sum(number_positive):Q"),x= alt.X("region:N"),color= alt.Color("region:N").scale(scheme="category20b"))
 
