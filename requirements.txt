@@ -1,12 +1,9 @@
 altair==4.2.0
-folium==0.12.1.post1
 folium==0.13.0
 numpy==1.21.4
 numpy==1.21.6
 openpyxl==3.0.10
 pandas==1.5.1
-pandas==1.5.3
-Plost==0.2.5
 streamlit==1.14.0
 streamlit_extras==0.3.2
 streamlit_folium==0.14.0
