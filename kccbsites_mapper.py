@@ -24,7 +24,6 @@ from folium.plugins import FeatureGroupSubGroup
 
 #import libraries for visualizations
 import altair as alt
-import plost
 
 #to allow making of a date and time dispaly feature
 import datetime
