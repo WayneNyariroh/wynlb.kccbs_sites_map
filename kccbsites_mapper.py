@@ -75,9 +75,8 @@ with st.sidebar:
    st.button(f':clock1: {cal_watch.strftime("%d/%m/%Y  %H:%M")}', 
              disabled=True)
    st.header('KCCB-ACTS Supported Sites Mapper `version 1.0` ')
-   st.caption("a mapping of all sites supported by KCCB-ACTS with additional visualizations on key indicator elements. "
-              "The first tab - :orange[Site Locations] - maps all the facility, grouping them into clusters based on promixity and zoom level. "
-              "It also shows popup information for each facility on click. "
+   st.caption("a mapping of all sites supported by KCCB-ACTS with additional visualizations. "
+              "The first tab - :orange[Site Locations] - maps all the facilities, grouping them into proximity clusters depending on zoom level. "
               "The second tab - :orange[Data Visualization] - shows various data elements and metrics with various aggregations and pivotting used.  ")
    st.caption("Data used was extracted from 3pm reporting platform: then cleaned and prepared with feature engineering and aggregations to get the desired datasets")
    st.divider()
@@ -85,8 +84,9 @@ with st.sidebar:
                 ''')
     
 #tabs for the main view    
-Map_tab, Viz_tab  = st.tabs(["Site Locations :earth_africa:",
-                             "Data Visualizations :bar_chart:"])
+Map_tab, Viz_tab, Code_tabs  = st.tabs(["Site Locations :earth_africa:",
+                             "Data Visualizations :bar_chart:",
+                             "Discarded Plots :disappointed:"])
 
 #our map
 with Map_tab:
@@ -107,7 +107,7 @@ with Map_tab:
                        icon=folium.Icon(color='orange'),
                        popup=(site[1]['facility_name']+","+" located in"+" "+site[1]['sub_county']+" "+"sub county"+" "+"in"+" "+site[1]['county']+"."+" Serves "+str(site[1]['2023Q4'])+" clients on ART (close of aug 2023)"),
                              min_width=2500, 
-                       tooltip="Click for Facility Information :wave:").add_to(sites_cluster) 
+                       tooltip="Click for Facility Information").add_to(sites_cluster) 
       
       #implement a search feature on to the map with the SearchPlugin
       site_search = Search(
@@ -155,8 +155,8 @@ with Viz_tab:
       with metric4:
          st.metric(label="""Tx Current Growth Q4""",
                   value=((f"{(df['2023Q4']).sum() - (df['2023Q3']).sum()}")), 
-                  delta=((f"{(df['2023Q3']).sum() - (df['2023Q2']).sum()}")), delta_color="inverse"
-         )
+                  delta=((f"{(df['2023Q3']).sum() - (df['2023Q2']).sum()} Q3 growth")), delta_color="inverse")
+                  
       
       #styling our metric cards
       style_metric_cards(background_color="#EFF2F5", 
@@ -233,8 +233,14 @@ with Viz_tab:
 
          st.altair_chart(site_count_bar + text, use_container_width=True)
       
-   
-   viznext1, viznext2 = st.columns(2)
+   with st.container():
+      st.dataframe(((df[['county','txnew2023Q1','txnew2023Q2',
+               'txnew2023Q3','txnew2023Q4']].groupby(
+                  by=['county'])[['txnew2023Q1',
+                                    'txnew2023Q2','txnew2023Q3','txnew2023Q4']].sum()).transpose().reset_index().rename(columns={"index":"FY23 Quarter"}).set_index('FY23 Quarter')),
+                  use_container_width=True)
+      
+   viznext1, viznext2 = st.columns([3,2])
    with viznext1:
       with st.container():
          st.subheader("Testing service delivery", divider="grey")
@@ -255,24 +261,78 @@ with Viz_tab:
          st.altair_chart(entry_point_tests + text_tested, use_container_width=True)
       
    #create a new dataset merge tx new per county with tested per county    
-   txnew_yield = (df.groupby(by=['county'])[['txnew2023Q4']].sum()).merge(tested_df,
-                                                                 on=['county'],
-                                                                 how='outer')
+   pos_yield = (df.groupby(by=['county'])[['txnew2023Q4']].sum()).merge(tested_df, 
+               on=['county'],
+               how='outer').groupby(by=['region'])[['number_tested','number_positive']].sum()
+                     
       
    #stacked area plot
    with viznext2:
       with st.container():
-         st.subheader("Tested Positive New on ART", divider="grey")
-         st.caption("visualization of how tests done resulted in new on ART clients for the month August 2023")
+         st.subheader("Tested Positive", divider="grey")
+         st.caption("Positivity yield for the month August 2023 from the total tests done in each region")
+         st.table(pos_yield)
          
-         
-         #test_yield = alt.Chart(txnew_yield).mark_area().encode(y= alt.Y("sum(txnew2023Q4):Q, sum(tested_totals):Q"),x= alt.X("county:N"),color= alt.Color("county:N").scale(scheme="category20b"))
+         #test_yield = alt.Chart(pos_yield).mark_area().encode(y= alt.Y("sum(number_tested):Q, sum(number_positive):Q"),x= alt.X("region:N"),color= alt.Color("region:N").scale(scheme="category20b"))
 
-         #test_yield
-   st.dataframe(((df[['county','txnew2023Q1','txnew2023Q2',
-             'txnew2023Q3','txnew2023Q4']].groupby(
-                 by=['county'])[['txnew2023Q1',
-                                 'txnew2023Q2','txnew2023Q3','txnew2023Q4']].sum()).transpose().reset_index().rename(columns={"index":"FY23 Quarter"}).set_index('FY23 Quarter')),
-                use_container_width=True)
+with Code_tabs:
+   
+   st.caption("**some code samples and visualizations that didnt pan out, and missed a place in the second tab, but will be explored later.**")   
+   code_1, code_2 = st.columns([1,3])
+   with code_1:
+      with st.container():
+         st.write("***input***")
+         st.markdown('''            
+            ```python
+            {
+            alt.Chart(
+               (sites_dataset.groupby(
+                  by=['county'])[['txnew2023Q4']]
+               .sum())
+               .merge(tests_dataset, 
+               on=['county'], how='outer')
+               .set_index('county').reset_index())
+               .mark_point().encode(
+                  x= alt.X("county:N"),
+                  y= alt.Y("number_tested:Q"))       
+                                                                        
+            alt.Chart(
+               (sites_dataset.groupby(
+                  by=['county'])[['txnew2023Q4']]
+               .sum())
+               .merge(
+                  tests_dataset, 
+                  on=['county'], how='outer')
+               .set_index('county').reset_index())
+               .mark_area().encode(
+                  x= alt.X("county:N"), 
+                  y= alt.Y("number_positive:Q"))
+
+            (test_num + test_num.mark_line() | test_pos)
+            }
+         ``` ''')
+   with code_2:   
+      with st.container():
+         st.write("***output***")      
+         test_num = alt.Chart((df.groupby(by=['county'])[['txnew2023Q4']].sum()).merge(tested_df,
+                                                                        on=['county'],
+                                                                        how='outer').set_index('county').reset_index()).mark_point().encode(
+               x= alt.X("county:N"),
+               y= alt.Y("number_tested:Q")).properties(
+            height=250,
+            width=350)        
+                                                                        
+         test_pos = alt.Chart((df.groupby(by=['county'])[['txnew2023Q4']].sum()).merge(tested_df,
+                                                                        on=['county'],
+                                                                        how='outer').set_index('county').reset_index()).mark_area().encode(
+               x= alt.X("county:N"),
+               y= alt.Y("number_positive:Q")).properties(
+            height=250,
+            width=350)
+
+         st.altair_chart(test_num + test_num.mark_line() | test_pos, use_container_width=True)
+   
+   st.caption("Attempted to code a stacked area chart for total tests against total positives identifed by layering the two plots above but it was mind numbing, though with use of some scaling,aggregations, melt and pivots it should be possible.")
+   
     
     
