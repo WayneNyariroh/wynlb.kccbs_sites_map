@@ -74,7 +74,7 @@ entrypoint_tests = pd.read_excel(entry_point_data)
 #sidebar
 with st.sidebar:
    cal_watch = datetime.datetime.now()
-   st.button(f':clock1: {cal_watch.strftime("%d/%m/%Y  %H:%M")}', 
+   st.button(f':calendar: {cal_watch.strftime("%d/%m/%Y")}', 
              disabled=True)
    st.subheader('KCCB-ACTS Supported Sites Mapper `version 1.0` ')
    st.caption("mapping of sites supported by ***KCCB-ACTS*** with additional visualizations. "
