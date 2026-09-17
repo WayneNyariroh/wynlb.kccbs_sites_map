@@ -391,12 +391,6 @@ Activate it.
 .venv\Scripts\activate
 ```
 
-### macOS / Linux
-
-```bash
-source .venv/bin/activate
-```
-
 Install the project dependencies:
 
 ```bash
