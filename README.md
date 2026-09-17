@@ -4,6 +4,16 @@ An interactive health programme mapping and analytics project combining **facili
 
 The project brings several separate datasets together at facility level and presents the resulting information through an interactive Streamlit dashboard and geographic facility map.
 
+## Live application
+
+The deployed Streamlit application is available here:
+
+**[Open the live KCCB-ACTS Health Facilities Mapper](https://wynlb-kccbssitesmap.streamlit.app/)**
+
+> The application is hosted on Streamlit Community Cloud. If it has been inactive for some time, Streamlit may take a few seconds to wake the application.
+
+---
+
 ## Project overview
 
 Health programme information is often stored across separate datasets. Facility coordinates may exist in one source, programme indicators in another, and administrative or programme regions somewhere else.
@@ -22,6 +32,29 @@ This project combines them into a single analytical dataset that can answer ques
 - How many tests and positive results were recorded across programme regions?
 
 The final output is an interactive application that connects **where services are delivered** with **what programme activity is occurring at those locations**.
+
+---
+## Application preview
+
+The screenshots below provide a quick look at the deployed application.
+
+### Supported health facilities map
+
+![Supported facilities map](screenshots/start_screen.png)
+
+*Interactive Folium map showing the geographic distribution of supported health facilities.*
+
+### Regional programme analysis
+
+![Regional programme analysis](screenshots/viz1.png)
+
+*Programme indicators summarised by region to compare treatment volumes and programme reach.*
+
+### HIV testing analysis
+
+![HIV testing analysis](screenshots/viz2.png)
+
+*Testing activity, positive results, and service entry-point analysis.*
 
 ---
 
