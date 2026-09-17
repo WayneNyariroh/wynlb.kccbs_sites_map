@@ -31,7 +31,7 @@ The analysis focuses on health facilities supported by **KCCB-ACTS** - where I s
 
 The underlying data came from different programme and health information sources and required substantial preparation before it could be analysed together.
 
-Some source information was available through reports and embedded dashboards rather than convenient public APIs or downloadable analytical datasets. This meant that part of the project involved manually assembling source data before cleaning, validating, restructuring, and joining it.
+Kenya Master Health Facility List and KenyaHMIS Public NDWH were used for the data sourcing. There were no convenient public APIs at the time in either, so most of the data was manual entry. This meant that part of the project involved manually assembling source data before cleaning, validating, restructuring, and joining it.
 
 The final facility-level dataset for 2023 contains:
 
@@ -432,7 +432,7 @@ The regional dataset contained fewer records than the facility dataset. Missing 
 
 ### Manual source extraction
 
-Some source data had to be assembled manually because the original systems did not provide a convenient public API or analytical export.
+Some source data had to be assembled manually because the original systems did not provide a convenient public API or analytical export. 
 
 Manual extraction increases the possibility of transcription errors, so the datasets required additional cleaning and validation.
 
@@ -524,4 +524,4 @@ These additions would turn the project from a static FY2023 analytical applicati
 
 Data analysis, data integration, visualisation, and application development.
 
-The project was built as part of my portfolio to explore how programme, facility, and geographic data can be combined to make operational health data easier to understand and use.
+The project was built during my time as a KCCB Data Manager to explore how the programme, facility, and geographic data can be combined to make operational health data easier to understand and use.
